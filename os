@@ -411,3 +411,244 @@ int main()
     return 0;
 }
 
+// round robin algorithm
+
+#include <stdio.h>
+#include <limits.h>
+#include <stdbool.h>
+
+struct P
+{
+    int AT, BT, ST[20], WT, FT, TAT, pos;
+};
+
+int quant;
+int main()
+{
+    int n, i, j;
+    // Taking Input
+    printf("Enter the no. of processes :");
+    scanf("%d", &n);
+    struct P p[n];
+
+    printf("Enter time quantum :");
+    scanf("%d", &quant);
+
+    printf("Enter the process numbers :\n");
+    for (i = 0; i < n; i++)
+        scanf("%d", &(p[i].pos));
+
+    printf("Enter the Arrival time of processes :\n");
+    for (i = 0; i < n; i++)
+        scanf("%d", &(p[i].AT));
+
+    printf("Enter the Burst time of processes :\n");
+    for (i = 0; i < n; i++)
+        scanf("%d", &(p[i].BT));
+
+    // Declaring variables
+    int c = n, s[n][20];
+    float time = 0, mini = INT_MAX, b[n], a[n];
+
+    // Initializing burst and arrival time arrays
+    int index = -1;
+    for (i = 0; i < n; i++)
+    {
+        b[i] = p[i].BT;
+        a[i] = p[i].AT;
+        for (j = 0; j < 20; j++)
+        {
+            s[i][j] = -1;
+        }
+    }
+
+    int tot_wt, tot_tat;
+    tot_wt = 0;
+    tot_tat = 0;
+    bool flag = false;
+
+    while (c != 0)
+    {
+
+        mini = INT_MAX;
+        flag = false;
+
+        for (i = 0; i < n; i++)
+        {
+            float p = time + 0.1;
+            if (a[i] <= p && mini > a[i] && b[i] > 0)
+            {
+                index = i;
+                mini = a[i];
+                flag = true;
+            }
+        }
+        // if at =1 then loop gets out hence set flag to false
+        if (!flag)
+        {
+            time++;
+            continue;
+        }
+
+        // calculating start time
+        j = 0;
+
+        while (s[index][j] != -1)
+        {
+            j++;
+        }
+
+        if (s[index][j] == -1)
+        {
+            s[index][j] = time;
+            p[index].ST[j] = time;
+        }
+
+        if (b[index] <= quant)
+        {
+            time += b[index];
+            b[index] = 0;
+        }
+        else
+        {
+            time += quant;
+            b[index] -= quant;
+        }
+
+        if (b[index] > 0)
+        {
+            a[index] = time + 0.1;
+        }
+
+        // calculating arrival,burst,completion times
+        if (b[index] == 0)
+        {
+            c--;
+            p[index].FT = time;
+            p[index].WT = p[index].FT - p[index].AT - p[index].BT;
+            tot_wt += p[index].WT;
+            p[index].TAT = p[index].BT + p[index].WT;
+            tot_tat += p[index].TAT;
+        }
+
+    }
+
+    // Printing output
+    printf("Process number ");
+    printf("Arrival time ");
+    printf("Burst time ");
+    printf("\tStart time");
+    j = 0;
+    while (j != 10)
+    {
+        j += 1;
+        printf(" ");
+    }
+    printf("\t\tCompletion time");
+    printf("\tWaiting Time ");
+    printf("\tTurnAround Time \n");
+
+    for (i = 0; i < n; i++)
+    {
+        printf("%d \t\t", p[i].pos);
+        printf("%d \t\t", p[i].AT);
+        printf("%d \t", p[i].BT);
+        j = 0;
+        int v = 0;
+        while (s[i][j] != -1)
+        {
+            printf("%d ", p[i].ST[j]);
+            j++;
+            v += 3;
+        }
+        while (v != 40)
+        {
+            printf(" ");
+            v += 1;
+        }
+        printf("%d \t\t", p[i].FT);
+        printf("%d \t\t", p[i].WT);
+        printf("%d \n", p[i].TAT);
+    }
+
+    // Calculating average wait time and turnaround time
+    double avg_wt, avg_tat;
+    avg_wt = tot_wt / (float)n;
+    avg_tat = tot_tat / (float)n;
+
+    // Printing average wait time and turnaround time
+    printf("The average waiting time is : %lf\n", avg_wt);
+    printf("The average TurnAround time is : %lf\n", avg_tat);
+
+    return 0;
+}
+
+//FCFS
+#include<stdio.h> 
+// Function to find the waiting time for all processes
+void findWaitingTime(int processes[], int n, 
+						int bt[], int wt[]) 
+{ 
+	// waiting time for first process is 0 
+	wt[0] = 0; 
+
+	// calculating waiting time 
+	for (int i = 1; i < n ; i++ ) 
+		wt[i] = bt[i-1] + wt[i-1] ; 
+} 
+
+// Function to calculate turn around time 
+void findTurnAroundTime( int processes[], int n, 
+				int bt[], int wt[], int tat[]) 
+{ 
+	// calculating turnaround time by adding 
+	// bt[i] + wt[i] 
+	for (int i = 0; i < n ; i++) 
+		tat[i] = bt[i] + wt[i]; 
+} 
+
+//Function to calculate average time 
+void findavgTime( int processes[], int n, int bt[]) 
+{ 
+	int wt[n], tat[n], total_wt = 0, total_tat = 0; 
+
+	//Function to find waiting time of all processes 
+	findWaitingTime(processes, n, bt, wt); 
+
+	//Function to find turn around time for all processes 
+	findTurnAroundTime(processes, n, bt, wt, tat); 
+
+	//Display processes along with all details 
+	printf("Processes   Burst time    Waiting time     Turn around time\n"); 
+
+	// Calculate total waiting time and total turn 
+	// around time 
+	for (int i=0; i<n; i++) 
+	{ 
+		total_wt = total_wt + wt[i]; 
+		total_tat = total_tat + tat[i]; 
+		printf(" %d \t",(i+1));
+		printf("	 %d\t ", bt[i] );
+		printf("	 %d\t",wt[i] );
+		printf("	 %d\t\n",tat[i] ); 
+	} 
+	float s=(float)total_wt / (float)n;
+	float t=(float)total_tat / (float)n;
+	printf("Average waiting time = %f",s);
+	printf("\n");
+	printf("Average turn around time = %f ",t); 
+} 
+
+// Driver code 
+int main() 
+{ 
+	//process id's 
+	int processes[] = { 1, 2, 3}; 
+	int n = sizeof processes / sizeof processes[0]; 
+
+	//Burst time of all processes 
+	int burst_time[] = {3, 3, 15}; 
+
+	findavgTime(processes, n, burst_time); 
+	return 0; 
+}
