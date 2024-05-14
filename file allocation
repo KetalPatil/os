@@ -1,0 +1,226 @@
+**sequential**
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdbool.h>
+#define MAX_BLOCKS 1000
+struct File {
+    int startBlock;
+    int length;
+};
+struct Disk {
+    int totalBlocks;
+    bool allocated[MAX_BLOCKS];
+};
+void initializeDisk(struct Disk *disk, int totalBlocks) {
+    disk->totalBlocks = totalBlocks;
+    for (int i = 0; i < totalBlocks; i++) {
+        disk->allocated[i] = false;
+    }
+}
+int allocateBlocks(struct Disk *disk, int length) {
+    int startBlock = -1;
+    int count = 0;
+    for (int i = 0; i < disk->totalBlocks; i++) {
+        if (!disk->allocated[i]) {
+            if (startBlock == -1) {
+                startBlock = i;
+            }
+            count++;
+            if (count == length) {
+                break;
+            }
+        } else {
+            startBlock = -1;
+            count = 0;
+        }
+    }
+    if (count < length) {
+        printf("Error: Not enough contiguous blocks available.\n");
+        return -1;
+    }
+    for (int i = startBlock; i < startBlock + length; i++) {
+        disk->allocated[i] = true;
+    }
+    return startBlock;
+}
+void displayDisk(struct Disk *disk) {
+    printf("Disk Status:\n");
+    printf("Block   Status\n");
+    for (int i = 0; i < disk->totalBlocks; i++) {
+        printf("%d\t%s\n", i, disk->allocated[i] ? "Allocated" : "Free");
+    }
+}
+int main() {
+    struct Disk disk;
+    int totalBlocks, numFiles;
+    printf("Enter total number of blocks on disk: ");
+    scanf("%d", &totalBlocks);
+    initializeDisk(&disk, totalBlocks);
+    printf("Enter number of files: ");
+    scanf("%d", &numFiles);
+    struct File files[numFiles];
+    for (int i = 0; i < numFiles; i++) {
+        printf("Enter length of file %d: ", i + 1);
+        scanf("%d", &files[i].length);
+        files[i].startBlock = allocateBlocks(&disk, files[i].length);
+        if (files[i].startBlock == -1) {
+            printf("Failed to allocate blocks for file %d.\n", i + 1);
+        } else {
+            printf("File %d allocated starting from block %d.\n", i + 1, files[i].startBlock);
+        }
+    }
+    displayDisk(&disk);
+    return 0;
+}
+
+**indexed**
+#include <stdio.h>
+#include <stdbool.h>
+#define MAX_BLOCKS 1000
+#define MAX_FILES 100
+struct File {
+    int indexBlock;
+    int numBlocks;
+    int blocks[MAX_BLOCKS];
+};
+struct Disk {
+    int totalBlocks;
+    bool allocated[MAX_BLOCKS];
+};
+void initializeDisk(struct Disk *disk, int totalBlocks) {
+    disk->totalBlocks = totalBlocks;
+    for (int i = 0; i < totalBlocks; i++) {
+        disk->allocated[i] = false;
+    }}
+int allocateBlocks(struct Disk *disk, struct File *file, int numBlocks) {
+    for (int i = 0; i < disk->totalBlocks; i++) {
+        if (!disk->allocated[i]) {
+            disk->allocated[i] = true;
+            file->indexBlock = i;
+            break;
+        }
+    }
+    if (file->indexBlock == -1) {
+        printf("Error: Failed to allocate index block for file.\n");
+        return -1;
+    }
+    int allocatedBlocks = 0;
+    for (int i = 0; i < disk->totalBlocks; i++) {
+        if (!disk->allocated[i]) {
+            disk->allocated[i] = true;
+            file->blocks[allocatedBlocks] = i;
+            allocatedBlocks++;
+            if (allocatedBlocks == numBlocks) {
+                break;
+            }
+        }
+    }
+    file->numBlocks = allocatedBlocks;
+    return file->indexBlock;
+}
+int main() {
+    struct Disk disk;
+    int totalBlocks, numFiles;
+    printf("Enter total number of blocks on disk: ");
+    scanf("%d", &totalBlocks);
+    initializeDisk(&disk, totalBlocks);
+    printf("Enter number of files: ");
+    scanf("%d", &numFiles);
+    struct File files[numFiles];
+    for (int i = 0; i < numFiles; i++) {
+        int numBlocks;
+        printf("Enter number of blocks for file %d: ", i + 1);
+        scanf("%d", &numBlocks);
+        files[i].indexBlock = allocateBlocks(&disk, &files[i], numBlocks);
+        if (files[i].indexBlock == -1) {
+            printf("Failed to allocate blocks for file %d.\n", i + 1);
+        } 
+
+else {
+printf("File %d allocated with index block %d and %d data blocks.\n", i + 1, files[i].indexBlock, files[i].numBlocks);
+        }
+    }
+    return 0;
+}
+
+**linked**
+#include <stdio.h>
+#include <stdlib.h>
+
+#define BLOCK_SIZE 1024 // Size of each block
+#define MAX_BLOCKS 1000 // Maximum number of blocks
+
+// Structure to represent a disk block
+struct DiskBlock {
+    char data[BLOCK_SIZE];
+    struct DiskBlock* next;
+};
+
+// Function to create a new disk block
+struct DiskBlock* createDiskBlock() {
+    struct DiskBlock* block = (struct DiskBlock*)malloc(sizeof(struct DiskBlock));
+    if (block == NULL) {
+        printf("Memory allocation failed.\n");
+        exit(1);
+    }
+    block->next = NULL;
+    return block;
+}
+
+// Function to initialize disk blocks
+void initializeDisk(struct DiskBlock* disk[], int totalBlocks) {
+    for (int i = 0; i < totalBlocks; i++) {
+        disk[i] = createDiskBlock();
+    }
+}
+
+// Function to allocate blocks for a file
+void allocateBlocks(struct DiskBlock* disk[], int totalBlocks, int fileSize) {
+    int numBlocksNeeded = (fileSize + BLOCK_SIZE - 1) / BLOCK_SIZE; // Calculate number of blocks needed
+    if (numBlocksNeeded > totalBlocks) {
+        printf("Not enough space available on disk.\n");
+        return;
+    }
+    struct DiskBlock* currentBlock = NULL;
+    for (int i = 0; i < numBlocksNeeded; i++) {
+        if (i == 0) {
+            currentBlock = disk[i];
+        } else {
+            currentBlock->next = disk[i];
+            currentBlock = currentBlock->next;
+        }
+    }
+    printf("File allocated successfully.\n");
+}
+
+// Function to display the allocation of blocks for a file
+void displayAllocation(struct DiskBlock* startBlock) {
+    struct DiskBlock* currentBlock = startBlock;
+    int blockCount = 0;
+    while (currentBlock != NULL) {
+        printf("Block %d\n", ++blockCount);
+        currentBlock = currentBlock->next;
+    }
+}
+
+int main() {
+    struct DiskBlock* disk[MAX_BLOCKS]; // Array to hold disk blocks
+    int totalBlocks = MAX_BLOCKS;
+
+    initializeDisk(disk, totalBlocks);
+
+    // Example usage
+    int fileSize = 2048; // File size in bytes
+    allocateBlocks(disk, totalBlocks, fileSize);
+
+    // Display allocation
+    printf("Blocks allocated for the file:\n");
+    displayAllocation(disk[0]); // Assuming the first block of the disk is the start
+
+    // Free allocated memory
+    for (int i = 0; i < totalBlocks; i++) {
+        free(disk[i]);
+    }
+
+    return 0;
+}
